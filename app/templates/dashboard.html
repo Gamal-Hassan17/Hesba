@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+{% block title %}لوحة التحكم | حِسبة{% endblock %}
+{% block content %}
+<div class="page-heading d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+  <div><span class="eyebrow">نظرة عامة</span><h1 class="h2 fw-bold mb-1">لوحة التحكم</h1><p class="text-muted mb-0">تابع أموالك ومصروفات كل بند بشكل مستقل.</p></div>
+  <div class="d-flex flex-wrap gap-2">
+    <button class="btn btn-success btn-lg" id="excelSaveBtn" type="button"><i class="bi bi-file-earmark-plus ms-2"></i>حفظ نسخة Excel</button>
+    <button class="btn btn-outline-success btn-lg" id="excelUpdateBtn" type="button"><i class="bi bi-arrow-repeat ms-2"></i>تحديث ملف Excel</button>
+    <a class="btn btn-outline-primary btn-lg" href="{{ url_for('analytics.reports') }}"><i class="bi bi-bar-chart-line ms-2"></i>التقارير</a>
+    <a class="btn btn-outline-primary btn-lg" href="{{ url_for('recurring.index') }}"><i class="bi bi-arrow-repeat ms-2"></i>المصروفات المتكررة</a>
+    <a class="btn btn-primary btn-lg" href="{{ url_for('accounts.create') }}"><i class="bi bi-plus-lg ms-2"></i>إضافة بند مالي</a>
+  </div>
+</div>
+<div class="row g-3 mb-4">
+
+  <!-- إجمالي الأموال المضافة -->
+  <div class="col-12 col-md-6 col-xl-3">
+    <div class="summary-card summary-blue h-100">
+      <div class="summary-icon">
+        <i class="bi bi-cash-stack"></i>
+      </div>
+      <div class="summary-label">إجمالي الأموال المضافة بالمزانية</div>
+      <div class="summary-value">
+        {{ total_funding|money }} <small>جنيه</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- المصروفات ببند -->
+  <div class="col-12 col-md-6 col-xl-3">
+    <div class="summary-card summary-orange h-100">
+      <div class="summary-icon">
+        <i class="bi bi-receipt"></i>
+      </div>
+      <div class="summary-label">إجمالي المصروفات بالمزانية</div>
+      <div class="summary-value">
+        {{ budgeted_expenses|money }} <small>جنيه</small>
+      </div>
+    </div>
+  </div>
+  <!-- المتبقي ببند -->
+  <div class="col-12 col-md-6 col-xl-3">
+    <div class="summary-card summary-green h-100">
+      <div class="summary-icon">
+        <i class="bi bi-piggy-bank"></i>
+      </div>
+      <div class="summary-label">إجمالي المتبقي بالمزانية</div>
+      <div class="summary-value">
+        {{ total_remaining|money }} <small>جنيه</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- المصروفات بدون بند -->
+  <div class="col-12 col-md-6 col-xl-3">
+    <div class="summary-card summary-orange h-100">
+      <div class="summary-icon">
+        <i class="bi bi-wallet2"></i>
+      </div>
+      <div class="summary-label">إجمالي المصروفات بدون ميزانية</div>
+      <div class="summary-value">
+        {{ unbudgeted_expenses|money }} <small>جنيه</small>
+      </div>
+    </div>
+  </div>
+
+  
+
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-3"><h2 class="h4 fw-bold mb-0">الحسابات المالية</h2><span class="badge rounded-pill text-bg-light">{{ accounts|length }} بنود</span></div>
+{% if accounts %}
+<div class="row g-3">
+{% for account in accounts %}
+  <div class="col-12 col-md-6 col-xl-4">
+    <article class="account-card h-100">
+      <div class="account-card-head"><div class="account-avatar"><i class="bi bi-folder2-open"></i></div><div class="flex-grow-1"><h3 class="h5 fw-bold mb-1">{{ account.name }}</h3><p class="text-muted small mb-0">{{ account.description or 'لا يوجد وصف للبند' }}</p></div></div>
+      <div class="account-stats">
+        {% if account.is_budgeted %}<div><span>الأموال المضافة</span><strong>{{ account.total_funding|money }} ج.م</strong></div>{% endif %}
+        <div><span>المصروفات</span><strong class="text-orange">{{ account.total_expenses|money }} ج.م</strong></div>
+        {% if account.is_budgeted %}<div><span>المتبقي</span><strong class="{% if account.remaining_balance < 0 %}text-danger{% else %}text-success{% endif %}">{{ account.remaining_balance|money }} ج.م</strong></div>{% else %}<div><span>نوع المتابعة</span><strong>مصروفات فقط</strong></div>{% endif %}
+      </div>
+      <div class="account-actions">
+        <a class="btn btn-primary flex-grow-1" href="{{ url_for('accounts.detail', account_id=account.id) }}">عرض التفاصيل</a>
+        <a class="btn btn-outline-primary" title="عرض المصروفات الكلية" href="{{ url_for('expenses.list_for_account', account_id=account.id) }}"><i class="bi bi-receipt"></i></a>
+        <a class="btn btn-light" title="إضافة مصروف" href="{{ url_for('expenses.create', account_id=account.id) }}"><i class="bi bi-plus-lg"></i></a>
+      </div>
+    </article>
+  </div>
+{% endfor %}
+</div>
+{% else %}
+<div class="empty-state"><div class="empty-icon"><i class="bi bi-wallet2"></i></div><h3 class="h5 fw-bold">لسه مفيش بنود مالية</h3><p class="text-muted">ابدأ بإضافة أول مبلغ عشان تتابع مصروفاته.</p><a class="btn btn-primary" href="{{ url_for('accounts.create') }}">إضافة أول بند مالي</a></div>
+{% endif %}
+<div class="alert alert-info mt-4 mb-0">
+  <i class="bi bi-shield-check ms-1"></i>
+  احفظ نسخة Excel على جهازك. عند التحديث القادم اختر نفس الملف، وسيتم دمج السجلات الجديدة مع الحفاظ على السجلات الموجودة داخل Excel.
+</div>
+<script src="{{ url_for('static', filename='js/excel-backup.js') }}"></script>
+{% endblock %}

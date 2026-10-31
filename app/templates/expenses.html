@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block title %}مصروفات {{ account.name }}{% endblock %}
+{% block content %}
+<div class="page-heading d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+<div><a class="back-link" href="{{ url_for('accounts.detail', account_id=account.id) }}"><i class="bi bi-arrow-right ms-1"></i>العودة للبند</a><h1 class="h2 fw-bold mt-2 mb-1">جميع مصروفات {{ account.name }}</h1><p class="text-muted mb-0">سجل كامل بالمصروفات الخاصة بهذا البند فقط.</p></div>
+{% if not account.is_archived %}<a class="btn btn-primary btn-lg" href="{{ url_for('expenses.create', account_id=account.id) }}"><i class="bi bi-plus-lg ms-2"></i>إضافة مصروف</a>{% endif %}
+</div>
+<div class="row g-3 mb-4">
+<div class="col-12 col-md-4"><div class="metric-card"><span>إجمالي الأموال المضافة</span><strong>{{ account.total_funding|money }} ج.م</strong></div></div>
+<div class="col-12 col-md-4"><div class="metric-card"><span>إجمالي مصروفات البند</span><strong class="text-orange">{{ account.total_expenses|money }} ج.م</strong></div></div>
+<div class="col-12 col-md-4">
+    <div class="metric-card">
+        <span>الرصيد المتبقي</span>
+
+        {% if account.remaining_balance is not none %}
+        <strong class="{% if account.remaining_balance < 0 %}text-danger{% else %}text-success{% endif %}">
+            {{ account.remaining_balance|money }} ج.م
+        </strong>
+        {% else %}
+        <strong class="text-muted">غير محدد</strong>
+        {% endif %}
+    </div>
+</div>
+</div>
+<section class="panel">
+<form class="filter-bar" method="get">
+<div class="filter-search"><label class="visually-hidden" for="q">البحث في الوصف</label><input class="form-control" id="q" name="q" value="{{ search }}" placeholder="ابحث في وصف المصروف..."></div>
+<div><label class="form-label small" for="from">من تاريخ</label><input class="form-control" type="date" id="from" name="from" value="{{ date_from }}"></div>
+<div><label class="form-label small" for="to">إلى تاريخ</label><input class="form-control" type="date" id="to" name="to" value="{{ date_to }}"></div>
+<div><label class="form-label small" for="sort">ترتيب حسب</label><select class="form-select" id="sort" name="sort"><option value="newest" {% if sort=='newest' %}selected{% endif %}>الأحدث أولًا</option><option value="oldest" {% if sort=='oldest' %}selected{% endif %}>الأقدم أولًا</option><option value="amount_high" {% if sort=='amount_high' %}selected{% endif %}>الأعلى مبلغًا</option><option value="amount_low" {% if sort=='amount_low' %}selected{% endif %}>الأقل مبلغًا</option></select></div>
+<div class="filter-submit"><button class="btn btn-outline-primary w-100" type="submit"><i class="bi bi-search ms-1"></i>تطبيق</button></div>
+</form>
+<div class="table-responsive"><table class="table expense-table align-middle mb-0"><thead><tr><th>رقم</th><th>المبلغ</th><th>الوصف</th><th>تاريخ المصروف</th><th>تاريخ الإضافة</th><th>الإيصال</th><th>الإجراءات</th></tr></thead><tbody>
+{% for expense in expenses %}
+<tr><td>{{ expense.id }}</td><td class="fw-bold text-orange text-nowrap">{{ expense.amount|money }} ج.م</td><td>{{ expense.description }}</td><td class="text-nowrap">{{ expense.expense_date.strftime('%d/%m/%Y %I:%M %p') }}</td><td class="text-nowrap">{{ expense.created_at.strftime('%d/%m/%Y %I:%M %p') }}</td><td>{% if expense.receipt_path %}<a class="btn btn-sm btn-outline-success" href="{{ url_for('receipts.view', expense_id=expense.id) }}" target="_blank" rel="noopener"><i class="bi bi-paperclip"></i> عرض</a>{% else %}<span class="text-muted">—</span>{% endif %}</td><td class="text-nowrap"><a class="btn btn-sm btn-outline-primary" href="{{ url_for('expenses.edit', expense_id=expense.id) }}"><i class="bi bi-pencil"></i> تعديل</a> {% if not account.is_archived %}<form class="d-inline" method="post" action="{{ url_for('expenses.delete', expense_id=expense.id) }}" data-confirm="هل أنت متأكد من حذف هذا المصروف؟ سيتم تحديث الإجمالي والرصيد."><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-sm btn-outline-danger" type="submit"><i class="bi bi-trash"></i> حذف</button></form>{% endif %}</td></tr>
+{% else %}<tr><td colspan="7" class="text-center py-5 text-muted">لا توجد مصروفات مسجلة لهذا البند حتى الآن.</td></tr>{% endfor %}
+</tbody>
+<tfoot><tr class="total-row"><th colspan="2">إجمالي نتائج العرض</th><th colspan="5" class="text-primary">{{ filtered_total|money }} جنيه مصري</th></tr><tr><th colspan="2">إجمالي المصروفات الكلية للبند</th><th colspan="5" class="text-orange">{{ account.total_expenses|money }} جنيه مصري</th></tr></tfoot>
+</table></div>
+<p class="small text-muted mt-3 mb-0">إجمالي نتائج العرض يتغير مع البحث والتصفية. إجمالي المصروفات الكلية يشمل جميع مصروفات هذا البند.</p>
+</section>
+{% endblock %}

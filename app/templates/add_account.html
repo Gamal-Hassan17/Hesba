@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block title %}إضافة بند مالي<script>
+(() => {
+  const budgeted = document.getElementById('mode_budgeted');
+  const amount = document.getElementById('initial_amount');
+  const wrap = document.getElementById('initial-amount-wrap');
+  const update = () => { const show = budgeted.checked; wrap.hidden = !show; amount.required = show; if (!show) amount.value = ''; };
+  budgeted.addEventListener('change', update);
+  document.getElementById('mode_expenses').addEventListener('change', update);
+  update();
+})();
+</script>
+{% endblock %}
+{% block content %}
+<div class="form-shell">
+  <a class="back-link" href="{{ url_for('dashboard.index') }}"><i class="bi bi-arrow-right ms-1"></i>العودة للرئيسية</a>
+  <div class="form-card">
+    <div class="form-title-icon"><i class="bi bi-folder-plus"></i></div>
+    <h1 class="h3 fw-bold mb-2">إضافة بند مالي جديد</h1><p class="text-muted mb-4">أنشئ بندًا مستقلًا لكل مبلغ أو غرض مالي.</p>
+    <form method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="mb-3"><label class="form-label" for="name">اسم البند المالي <span class="text-danger">*</span></label><input class="form-control form-control-lg" id="name" name="name" maxlength="120" placeholder="مثال: فلوس البيت" required></div>
+      <div class="mb-3">
+        <label class="form-label d-block">طريقة متابعة البند</label>
+        <div class="form-check border rounded-3 p-3 pe-5 mb-2"><input class="form-check-input" type="radio" name="is_budgeted" id="mode_budgeted" value="yes" checked><label class="form-check-label fw-semibold" for="mode_budgeted">بميزانية محددة</label><div class="small text-muted">أدخل المبلغ المتاح، وسيحسب النظام المتبقي.</div></div>
+        <div class="form-check border rounded-3 p-3 pe-5"><input class="form-check-input" type="radio" name="is_budgeted" id="mode_expenses" value="no"><label class="form-check-label fw-semibold" for="mode_expenses">تسجيل مصروفات فقط بدون ميزانية</label><div class="small text-muted">مثال: توظيب الشقة. سجّل المصروفات وسيجمعها النظام بدون إظهار رصيد متبقٍ.</div></div>
+      </div>
+      <div class="mb-3" id="initial-amount-wrap"><label class="form-label" for="initial_amount">المبلغ الأولي بالجنيه <span class="text-danger">*</span></label><div class="input-group input-group-lg"><span class="input-group-text">ج.م</span><input class="form-control" id="initial_amount" name="initial_amount" type="number" min="0.01" step="0.01" placeholder="100000" required></div></div>
+      <div class="mb-4"><label class="form-label" for="description">وصف البند</label><textarea class="form-control" id="description" name="description" rows="3" maxlength="500" placeholder="اكتب ملاحظات تساعدك تفتكر الغرض من المبلغ"></textarea></div>
+      <button class="btn btn-primary btn-lg w-100" type="submit"><i class="bi bi-check2-circle ms-2"></i>حفظ البند المالي</button>
+    </form>
+  </div>
+</div>
+<script>
+(() => {
+  const budgeted = document.getElementById('mode_budgeted');
+  const amount = document.getElementById('initial_amount');
+  const wrap = document.getElementById('initial-amount-wrap');
+  const update = () => { const show = budgeted.checked; wrap.hidden = !show; amount.required = show; if (!show) amount.value = ''; };
+  budgeted.addEventListener('change', update);
+  document.getElementById('mode_expenses').addEventListener('change', update);
+  update();
+})();
+</script>
+{% endblock %}

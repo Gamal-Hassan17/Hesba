@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block title %}تعديل مصروف{% endblock %}
+{% block content %}
+<div class="form-shell"><a class="back-link" href="{{ url_for('expenses.list_for_account', account_id=expense.account_id) }}"><i class="bi bi-arrow-right ms-1"></i>العودة للمصروفات</a>
+<div class="form-card mt-3"><div class="form-title-icon"><i class="bi bi-pencil-square"></i></div><h1 class="h3 fw-bold mb-2">تعديل مصروف</h1><p class="text-muted mb-4">البند المالي: {{ expense.account.name }}</p>
+<form method="post" enctype="multipart/form-data"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<div class="mb-3"><label class="form-label" for="amount">المبلغ بالجنيه</label><input class="form-control form-control-lg" id="amount" name="amount" type="number" min="0.01" step="0.01" value="{{ expense.amount }}" required></div>
+<div class="mb-3"><label class="form-label" for="description">وصف المصروف</label><input class="form-control form-control-lg" id="description" name="description" maxlength="500" value="{{ expense.description }}" required></div>
+<div class="mb-4"><label class="form-label" for="expense_date">تاريخ ووقت المصروف</label><input class="form-control form-control-lg" id="expense_date" name="expense_date" type="datetime-local" value="{{ expense.expense_date.strftime('%Y-%m-%dT%H:%M') }}" required></div>
+<div class="mb-4"><label class="form-label" for="receipt">صورة الفاتورة أو الإيصال (اختياري)</label><input class="form-control form-control-lg" id="receipt" name="receipt" type="file" accept=".jpg,.jpeg,.png,.webp,.pdf"><div class="form-text">الأنواع المدعومة: JPG وPNG وWEBP وPDF، بحد أقصى 5 ميجابايت.</div>{% if expense.receipt_path %}<div class="mt-2"><a href="{{ url_for('receipts.view', expense_id=expense.id) }}" target="_blank" rel="noopener">عرض الإيصال الحالي</a></div>{% endif %}</div>
+<button class="btn btn-primary btn-lg w-100" type="submit">حفظ التعديلات</button>
+</form></div></div>
+{% endblock %}

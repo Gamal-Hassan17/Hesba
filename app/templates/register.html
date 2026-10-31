@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}إنشاء حساب المدير | حِسبة{% endblock %}
+{% block content %}
+<div class="login-wrap">
+  <div class="login-card card border-0 shadow-lg">
+    <div class="card-body p-4 p-md-5">
+      <div class="brand-icon mb-3"><i class="bi bi-person-plus"></i></div>
+      <h1 class="h3 fw-bold text-center mb-2">إنشاء حساب المدير</h1>
+      <p class="text-muted text-center mb-4">أنشئ حسابك الأول لبدء استخدام حِسبة.</p>
+      <div class="alert alert-info small">صفحة التسجيل متاحة لإنشاء أول حساب فقط، وبعدها تُغلق تلقائيًا لحماية بياناتك.</div>
+      <form method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="mb-3">
+          <label class="form-label" for="username">اسم المستخدم</label>
+          <input class="form-control form-control-lg" id="username" name="username" minlength="3" maxlength="80" autocomplete="username" required autofocus>
+          <div class="form-text">3 أحرف على الأقل.</div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label" for="password">كلمة المرور</label>
+          <input class="form-control form-control-lg" id="password" name="password" type="password" minlength="8" autocomplete="new-password" required>
+          <div class="form-text">8 أحرف على الأقل.</div>
+        </div>
+        <div class="mb-4">
+          <label class="form-label" for="confirm_password">تأكيد كلمة المرور</label>
+          <input class="form-control form-control-lg" id="confirm_password" name="confirm_password" type="password" minlength="8" autocomplete="new-password" required>
+        </div>
+        <button class="btn btn-primary btn-lg w-100" type="submit"><i class="bi bi-shield-check ms-2"></i>إنشاء الحساب والدخول</button>
+      </form>
+      <p class="text-center mt-4 mb-0"><a href="{{ url_for('auth.login') }}">العودة لتسجيل الدخول</a></p>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}المصروفات المتكررة | حِسبة{% endblock %}
+{% block content %}
+<div class="page-heading mb-4"><span class="eyebrow">تنظيم تلقائي</span><h1 class="h2 fw-bold mb-2">المصروفات المتكررة</h1><p class="text-muted mb-0">سجّل الإيجار والفواتير والأقساط مرة واحدة، وسيضيفها حِسبة تلقائيًا عند موعد استحقاقها.</p></div>
+<div class="row g-4">
+  <div class="col-12 col-lg-5"><section class="form-card h-100"><div class="form-title-icon green-icon"><i class="bi bi-arrow-repeat"></i></div><h2 class="h5 fw-bold mb-3">إضافة مصروف متكرر</h2>
+    {% if accounts %}<form method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="mb-3"><label class="form-label" for="account_id">البند المالي</label><select class="form-select" id="account_id" name="account_id" required>{% for account in accounts %}<option value="{{ account.id }}">{{ account.name }}</option>{% endfor %}</select></div>
+      <div class="mb-3"><label class="form-label" for="description">وصف المصروف</label><input class="form-control" id="description" name="description" maxlength="500" placeholder="مثال: فاتورة الإنترنت" required></div>
+      <div class="mb-3"><label class="form-label" for="amount">المبلغ بالجنيه</label><input class="form-control" id="amount" name="amount" type="number" min="0.01" step="0.01" placeholder="مثال: 500" required></div>
+      <div class="mb-3"><label class="form-label" for="frequency">معدل التكرار</label><select class="form-select" id="frequency" name="frequency" required><option value="weekly">أسبوعي</option><option value="monthly" selected>شهري</option><option value="yearly">سنوي</option></select></div>
+      <div class="mb-3"><label class="form-label" for="next_due">أول موعد استحقاق</label><input class="form-control" id="next_due" name="next_due" type="datetime-local" required></div>
+      <div class="mb-4"><label class="form-label" for="end_date">تاريخ نهاية التكرار (اختياري)</label><input class="form-control" id="end_date" name="end_date" type="date"></div>
+      <button class="btn btn-primary btn-lg w-100" type="submit"><i class="bi bi-check2-circle ms-2"></i>حفظ المصروف المتكرر</button>
+    </form>{% else %}<div class="empty-inline">أضف بندًا ماليًا أولًا لتتمكن من إعداد مصروف متكرر.</div><a class="btn btn-primary" href="{{ url_for('accounts.create') }}">إضافة بند مالي</a>{% endif %}
+  </section></div>
+  <div class="col-12 col-lg-7"><section class="panel h-100"><div class="panel-heading"><div><h2 class="h5 fw-bold mb-1">جدول المصروفات المتكررة</h2><p class="text-muted small mb-0">تُسجّل الاستحقاقات عند فتح التطبيق، ولا تحتاج إلى إضافة كل مرة يدويًا.</p></div><span class="badge rounded-pill text-bg-light">{{ rules|length }} قاعدة</span></div>
+    {% if rules %}<div class="table-responsive"><table class="table align-middle mb-0"><thead><tr><th>المصروف</th><th>المبلغ</th><th>التكرار</th><th>الاستحقاق القادم</th><th>الحالة</th><th>إجراءات</th></tr></thead><tbody>{% for rule in rules %}<tr><td><strong>{{ rule.description }}</strong><div class="small text-muted">{{ rule.account.name }}</div></td><td class="text-nowrap">{{ rule.amount|money }} ج.م</td><td>{{ frequencies.get(rule.frequency, rule.frequency) }}</td><td class="text-nowrap">{{ rule.next_due.strftime('%d/%m/%Y') }}</td><td><span class="badge {% if rule.is_active %}text-bg-success{% else %}text-bg-secondary{% endif %}">{% if rule.is_active %}نشط{% else %}متوقف{% endif %}</span></td><td class="text-nowrap"><form class="d-inline" method="post" action="{{ url_for('recurring.toggle', rule_id=rule.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-sm btn-outline-primary" type="submit">{% if rule.is_active %}إيقاف{% else %}تفعيل{% endif %}</button></form> <form class="d-inline" method="post" action="{{ url_for('recurring.delete', rule_id=rule.id) }}" data-confirm="هل تريد حذف قاعدة المصروف المتكرر؟"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-sm btn-outline-danger" type="submit" aria-label="حذف"><i class="bi bi-trash"></i></button></form></td></tr>{% endfor %}</tbody></table></div>{% else %}<div class="empty-inline"><i class="bi bi-calendar2-check fs-2 d-block mb-2"></i>لسه مفيش مصروفات متكررة. أضف أول قاعدة من النموذج.</div>{% endif %}
+  </section></div>
+</div>
+{% endblock %}
