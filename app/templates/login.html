@@ -19,10 +19,8 @@
         </div>
         <button class="btn btn-primary btn-lg w-100" type="submit"><i class="bi bi-box-arrow-in-left ms-2"></i>تسجيل الدخول</button>
       </form>
-      {% if not registration_closed %}
-      <div class="text-center mt-3"><a href="{{ url_for('auth.register') }}" class="fw-bold">أول مرة تستخدم النظام؟ أنشئ حساب المدير</a></div>
-      {% endif %}
-      <p class="small text-muted text-center mt-4 mb-0"><i class="bi bi-shield-lock ms-1"></i>هذا النظام مخصص للاستخدام الشخصي.</p>
+      <div class="text-center mt-3"><a href="{{ url_for('auth.register') }}" class="fw-bold">مستخدم جديد؟ أنشئ حسابك</a></div>
+      <p class="small text-muted text-center mt-4 mb-0"><i class="bi bi-shield-lock ms-1"></i>بيانات كل مستخدم مستقلة عن الآخرين.</p>
     </div>
   </div>
 </div>
