@@ -15,7 +15,7 @@ def init_db():
 @click.option("--username", prompt="اسم المستخدم")
 @click.option("--password", prompt="كلمة المرور", hide_input=True, confirmation_prompt=True)
 def create_admin(username, password):
-    """Create the private administrator account."""
+    """Create an additional user account."""
     db.create_all()
     if User.query.filter_by(username=username).first():
         click.echo("اسم المستخدم موجود بالفعل.")
@@ -24,7 +24,7 @@ def create_admin(username, password):
     user.set_password(password)
     db.session.add(user)
     db.session.commit()
-    click.echo("تم إنشاء حساب المدير بنجاح.")
+    click.echo("تم إنشاء حساب المستخدم بنجاح.")
 
 if __name__ == "__main__":
     app.run(
