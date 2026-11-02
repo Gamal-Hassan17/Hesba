@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
+from flask import Blueprint, render_template, request, redirect, url_for, flash, abort, session
 from app import db
 from app.models import FinancialAccount, FundingTransaction
 from app.utils import login_required, parse_amount, parse_datetime
@@ -8,7 +8,10 @@ funding_bp = Blueprint("funding", __name__)
 @funding_bp.route("/account/<int:account_id>/new", methods=["GET", "POST"])
 @login_required
 def create(account_id):
-    account = db.session.get(FinancialAccount, account_id)
+    account = FinancialAccount.query.filter_by(
+        id=account_id,
+        user_id=session["user_id"]
+    ).first()
     if not account:
         abort(404)
     if account.is_archived:

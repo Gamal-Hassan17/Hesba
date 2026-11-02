@@ -1,4 +1,4 @@
-from flask import Blueprint, abort, redirect, current_app, send_from_directory
+from flask import Blueprint, abort, redirect, current_app, send_from_directory, session
 from pathlib import Path
 from app.models import Expense
 from app.utils import login_required
@@ -10,7 +10,13 @@ receipts_bp = Blueprint("receipts", __name__)
 @receipts_bp.route("/receipts/<int:expense_id>")
 @login_required
 def view(expense_id):
-    expense = Expense.query.get_or_404(expense_id)
+    from app.models import FinancialAccount
+    expense = Expense.query.join(
+        FinancialAccount, Expense.account_id == FinancialAccount.id
+    ).filter(
+        Expense.id == expense_id,
+        FinancialAccount.user_id == session["user_id"]
+    ).first_or_404()
     if not expense.receipt_path:
         abort(404)
     if is_remote_receipt(expense.receipt_path):

@@ -1,5 +1,5 @@
 
-from flask import Blueprint, render_template
+from flask import Blueprint, render_template, session
 from app.models import FinancialAccount
 from app.routes.recurring import process_due_recurring
 from app.utils import login_required
@@ -12,8 +12,9 @@ dashboard_bp = Blueprint("dashboard", __name__)
 @login_required
 def index():
 
-    process_due_recurring()
+    process_due_recurring(user_id=session["user_id"])
     accounts = FinancialAccount.query.filter_by(
+        user_id=session["user_id"],
         is_archived=False
     ).order_by(FinancialAccount.created_at.desc()).all()
 

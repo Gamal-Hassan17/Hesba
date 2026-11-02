@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
+from flask import Blueprint, render_template, request, redirect, url_for, flash, abort, session
 from app import db
 from app.models import FinancialAccount, Expense, FundingTransaction
 from app.utils import login_required, parse_amount
@@ -6,7 +6,10 @@ from app.utils import login_required, parse_amount
 accounts_bp = Blueprint("accounts", __name__)
 
 def get_account(account_id):
-    account = db.session.get(FinancialAccount, account_id)
+    account = FinancialAccount.query.filter_by(
+        id=account_id,
+        user_id=session["user_id"]
+    ).first()
     if not account:
         abort(404)
     return account
@@ -27,7 +30,13 @@ def create():
         except ValueError as exc:
             flash(str(exc), "danger")
             return render_template("add_account.html")
-        account = FinancialAccount(name=name, description=description, initial_amount=amount, is_budgeted=is_budgeted)
+        account = FinancialAccount(
+            user_id=session["user_id"],
+            name=name,
+            description=description,
+            initial_amount=amount,
+            is_budgeted=is_budgeted
+        )
         db.session.add(account)
         db.session.commit()
         flash("تمت إضافة البند المالي بنجاح.", "success")

@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, abort, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, flash, abort, current_app, session
 from uuid import uuid4
 from werkzeug.utils import secure_filename
 from app import db
@@ -27,7 +27,10 @@ def save_receipt(file_storage):
         raise ValueError(str(exc)) from exc
 
 def get_account(account_id):
-    account = db.session.get(FinancialAccount, account_id)
+    account = FinancialAccount.query.filter_by(
+        id=account_id,
+        user_id=session["user_id"]
+    ).first()
     if not account:
         abort(404)
     if account.is_archived:
@@ -35,7 +38,10 @@ def get_account(account_id):
     return account
 
 def get_expense(expense_id):
-    expense = db.session.get(Expense, expense_id)
+    expense = Expense.query.join(FinancialAccount).filter(
+        Expense.id == expense_id,
+        FinancialAccount.user_id == session["user_id"]
+    ).first()
     if not expense:
         abort(404)
     return expense
@@ -43,7 +49,10 @@ def get_expense(expense_id):
 @expenses_bp.route("/account/<int:account_id>")
 @login_required
 def list_for_account(account_id):
-    account = db.session.get(FinancialAccount, account_id)
+    account = FinancialAccount.query.filter_by(
+        id=account_id,
+        user_id=session["user_id"]
+    ).first()
     if not account:
         abort(404)
     query = Expense.query.filter_by(account_id=account.id)

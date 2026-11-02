@@ -1,12 +1,13 @@
 import calendar
 from datetime import datetime, timedelta
-from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
+from flask import Blueprint, render_template, request, redirect, url_for, flash, abort, session
 from app import db
 from app.models import FinancialAccount, RecurringExpense, Expense
 from app.utils import login_required, parse_amount, parse_datetime
 
 recurring_bp = Blueprint("recurring", __name__)
 FREQUENCIES = {"weekly": "أسبوعي", "monthly": "شهري", "yearly": "سنوي"}
+
 
 def advance_date(value, frequency):
     if frequency == "weekly":
@@ -18,17 +19,29 @@ def advance_date(value, frequency):
     day = min(value.day, calendar.monthrange(year, month)[1])
     return value.replace(year=year, month=month, day=day)
 
-def process_due_recurring(now=None):
-    """Create due expense entries once and advance each recurring rule."""
+
+def process_due_recurring(now=None, user_id=None):
+    """Process only the current user's recurring rules (or all for trusted CLI use)."""
     now = now or datetime.now()
-    rules = RecurringExpense.query.filter_by(is_active=True).all()
+    query = RecurringExpense.query.join(
+        FinancialAccount, RecurringExpense.account_id == FinancialAccount.id
+    ).filter(RecurringExpense.is_active.is_(True))
+    if user_id is not None:
+        query = query.filter(FinancialAccount.user_id == user_id)
+
+    rules = query.all()
     for rule in rules:
-        account = db.session.get(FinancialAccount, rule.account_id)
+        account = rule.account
         if not account or account.is_archived:
             rule.is_active = False
             continue
+
         safety_count = 0
-        while rule.next_due <= now and (rule.end_date is None or rule.next_due.date() <= rule.end_date.date()) and safety_count < 120:
+        while (
+            rule.next_due <= now
+            and (rule.end_date is None or rule.next_due.date() <= rule.end_date.date())
+            and safety_count < 120
+        ):
             db.session.add(Expense(
                 account_id=rule.account_id,
                 amount=rule.amount,
@@ -37,19 +50,38 @@ def process_due_recurring(now=None):
             ))
             rule.next_due = advance_date(rule.next_due, rule.frequency)
             safety_count += 1
+
         if rule.end_date and rule.next_due.date() > rule.end_date.date():
             rule.is_active = False
+
     db.session.commit()
+
+
+def get_rule(rule_id):
+    rule = RecurringExpense.query.join(FinancialAccount).filter(
+        RecurringExpense.id == rule_id,
+        FinancialAccount.user_id == session["user_id"]
+    ).first()
+    if not rule:
+        abort(404)
+    return rule
+
 
 @recurring_bp.route("/recurring", methods=["GET", "POST"])
 @login_required
 def index():
-    process_due_recurring()
-    accounts = FinancialAccount.query.filter_by(is_archived=False).order_by(FinancialAccount.name.asc()).all()
+    process_due_recurring(user_id=session["user_id"])
+
+    accounts = FinancialAccount.query.filter_by(
+        user_id=session["user_id"], is_archived=False
+    ).order_by(FinancialAccount.name.asc()).all()
+
     if request.method == "POST":
         try:
             account_id = int(request.form.get("account_id", ""))
-            account = db.session.get(FinancialAccount, account_id)
+            account = FinancialAccount.query.filter_by(
+                id=account_id, user_id=session["user_id"]
+            ).first()
             if not account or account.is_archived:
                 raise ValueError("اختار بندًا ماليًا صالحًا.")
             description = request.form.get("description", "").strip()
@@ -67,31 +99,42 @@ def index():
         except (ValueError, TypeError) as exc:
             flash(str(exc) or "راجع البيانات المدخلة.", "danger")
             return redirect(url_for("recurring.index"))
-        db.session.add(RecurringExpense(account_id=account.id, amount=amount, description=description,
-                                        frequency=frequency, next_due=next_due, end_date=end_date))
+
+        db.session.add(RecurringExpense(
+            account_id=account.id,
+            amount=amount,
+            description=description,
+            frequency=frequency,
+            next_due=next_due,
+            end_date=end_date
+        ))
         db.session.commit()
         flash("تم حفظ المصروف المتكرر. سيُسجَّل تلقائيًا عند موعد استحقاقه.", "success")
         return redirect(url_for("recurring.index"))
-    rules = RecurringExpense.query.order_by(RecurringExpense.is_active.desc(), RecurringExpense.next_due.asc()).all()
-    return render_template("recurring.html", accounts=accounts, rules=rules, frequencies=FREQUENCIES)
+
+    rules = RecurringExpense.query.join(FinancialAccount).filter(
+        FinancialAccount.user_id == session["user_id"]
+    ).order_by(RecurringExpense.is_active.desc(), RecurringExpense.next_due.asc()).all()
+
+    return render_template(
+        "recurring.html", accounts=accounts, rules=rules, frequencies=FREQUENCIES
+    )
+
 
 @recurring_bp.route("/recurring/<int:rule_id>/toggle", methods=["POST"])
 @login_required
 def toggle(rule_id):
-    rule = db.session.get(RecurringExpense, rule_id)
-    if not rule:
-        abort(404)
+    rule = get_rule(rule_id)
     rule.is_active = not rule.is_active
     db.session.commit()
     flash("تم تحديث حالة المصروف المتكرر.", "success")
     return redirect(url_for("recurring.index"))
 
+
 @recurring_bp.route("/recurring/<int:rule_id>/delete", methods=["POST"])
 @login_required
 def delete(rule_id):
-    rule = db.session.get(RecurringExpense, rule_id)
-    if not rule:
-        abort(404)
+    rule = get_rule(rule_id)
     db.session.delete(rule)
     db.session.commit()
     flash("تم حذف قاعدة المصروف المتكرر.", "success")
