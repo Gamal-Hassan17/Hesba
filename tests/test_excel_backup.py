@@ -14,7 +14,7 @@ def make_user():
 def test_excel_backup_creates_workbook_and_metadata(app):
     with app.app_context():
         user = make_user()
-        db.session.add(FinancialAccount(name="Home", initial_amount=100))
+        db.session.add(FinancialAccount(user_id=user.id, name="Home", initial_amount=100))
         db.session.commit()
         content = merge_workbook(None, user.id)
         wb = load_workbook(BytesIO(content))
@@ -26,7 +26,7 @@ def test_excel_backup_creates_workbook_and_metadata(app):
 def test_excel_backup_incremental_merge_keeps_excel_only_rows(app):
     with app.app_context():
         user = make_user()
-        account = FinancialAccount(name="Home", initial_amount=100)
+        account = FinancialAccount(user_id=user.id, name="Home", initial_amount=100)
         db.session.add(account)
         db.session.flush()
         db.session.add(Expense(account_id=account.id, amount=10, description="Food"))
@@ -49,7 +49,7 @@ def test_accounts_sheet_exports_total_funding_not_only_initial_amount(app):
     from app.models import FundingTransaction
     with app.app_context():
         user = make_user()
-        account = FinancialAccount(name="Car profit", initial_amount=10000)
+        account = FinancialAccount(user_id=user.id, name="Car profit", initial_amount=10000)
         db.session.add(account)
         db.session.flush()
         db.session.add_all([
@@ -67,7 +67,7 @@ def test_accounts_sheet_exports_total_funding_not_only_initial_amount(app):
 def test_excel_backup_can_update_same_users_workbook(app):
     with app.app_context():
         user = make_user()
-        account = FinancialAccount(name="Home", initial_amount=100)
+        account = FinancialAccount(user_id=user.id, name="Home", initial_amount=100)
         db.session.add(account)
         db.session.commit()
 
