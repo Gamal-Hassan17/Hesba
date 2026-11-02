@@ -9,6 +9,13 @@ class User(db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
+    financial_accounts = db.relationship(
+        "FinancialAccount",
+        backref="owner",
+        lazy=True,
+        cascade="all, delete-orphan"
+    )
+
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
 
@@ -18,6 +25,12 @@ class User(db.Model):
 class FinancialAccount(db.Model):
     __tablename__ = "financial_accounts"
     id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("user.id"),
+        nullable=False,
+        index=True
+    )
     name = db.Column(db.String(120), nullable=False)
     description = db.Column(db.String(500), default="", nullable=False)
     # is_budgeted=False means this is an expense-only tracker with no predefined budget.

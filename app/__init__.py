@@ -45,18 +45,43 @@ def create_app(config_class=Config):
 
     with app.app_context():
         db.create_all()
-        # Lightweight migration for databases created by earlier versions.
+
+        # Backward-compatible migration from the previous single-user schema.
+        # Existing accounts are assigned to the oldest existing user. If no user
+        # exists yet, the first registering user will claim these legacy accounts.
         from sqlalchemy import inspect, text
         inspector = inspect(db.engine)
-        if "financial_accounts" in inspector.get_table_names():
+        tables = set(inspector.get_table_names())
+
+        if "financial_accounts" in tables:
             columns = {column["name"] for column in inspector.get_columns("financial_accounts")}
             if "is_budgeted" not in columns:
                 with db.engine.begin() as connection:
-                    connection.execute(text("ALTER TABLE financial_accounts ADD COLUMN is_budgeted BOOLEAN NOT NULL DEFAULT TRUE"))
-        if "expenses" in inspector.get_table_names():
-            expense_columns = {column["name"] for column in inspector.get_columns("expenses")}
+                    connection.execute(text(
+                        "ALTER TABLE financial_accounts "
+                        "ADD COLUMN is_budgeted BOOLEAN NOT NULL DEFAULT TRUE"
+                    ))
+            if "user_id" not in columns:
+                with db.engine.begin() as connection:
+                    connection.execute(text(
+                        "ALTER TABLE financial_accounts ADD COLUMN user_id INTEGER"
+                    ))
+
+            # Re-check after ALTER TABLE operations.
+            from app.models import User
+            first_user = User.query.order_by(User.id.asc()).first()
+            if first_user:
+                with db.engine.begin() as connection:
+                    connection.execute(text(
+                        "UPDATE financial_accounts SET user_id = :user_id WHERE user_id IS NULL"
+                    ), {"user_id": first_user.id})
+
+        if "expenses" in tables:
+            expense_columns = {column["name"] for column in inspect(db.engine).get_columns("expenses")}
             if "receipt_path" not in expense_columns:
                 with db.engine.begin() as connection:
-                    connection.execute(text("ALTER TABLE expenses ADD COLUMN receipt_path VARCHAR(255)"))
+                    connection.execute(text(
+                        "ALTER TABLE expenses ADD COLUMN receipt_path VARCHAR(255)"
+                    ))
 
     return app
